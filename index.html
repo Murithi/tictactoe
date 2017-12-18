@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta http-equiv="X-UA-Compatible" content="ie=edge">
+                <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+                <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+                    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+                <link rel="stylesheet" href="index.css"/>    
+    <title>Tictactoe</title>
+</head>
+
+                <body>
+                    <div id="root">
+                    </div>                    
+    <script type="text/babel">
+const Square = props => (
+  <div className="contentContent">
+    <button type="button" onClick={props.onClick}>
+      {props.value}
+    </button>
+  </div>
+);
+
+class Board extends React.Component {
+  renderSquare(i) {
+    return <Square value={this.props.squares[i]} onClick={() => this.props.onClick(i)} />;
+  }
+
+  render() {
+    return (
+      <div className="content">
+        {this.renderSquare(0)}
+        {this.renderSquare(1)}
+        {this.renderSquare(2)}
+
+        {this.renderSquare(3)}
+        {this.renderSquare(4)}
+        {this.renderSquare(5)}
+
+        {this.renderSquare(6)}
+        {this.renderSquare(7)}
+        {this.renderSquare(8)}
+      </div>
+    );
+  }
+}
+
+class Game extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      history: [
+        {
+          squares: Array(9).fill(null)
+        }
+      ],
+      stepNumber: 0,
+      xIsNext: true
+    };
+    this.computerPlay = this.computerPlay.bind(this);
+  }
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: step % 2 === 0
+    });
+  }
+  componentDidMount() {
+    let huPlayer = 'X';
+    let aiPlayer = 'O';
+    if (this.state.stepNumber === 0) {
+      const history = this.state.history.slice(0, this.state.stepNumber + 1);
+      const current = history[history.length - 1];
+
+      const squares = current.squares.slice();
+      let newSquares = squares.slice();
+      let bestmove = minimax(newSquares, aiPlayer);
+
+      if (!calculateWinner(squares) || !squares[bestmove.index]) {
+        squares[bestmove.index] = aiPlayer;
+      }
+
+      this.setState({
+        history: history.concat([{ squares: squares }]),
+        stepNumber: history.length,
+        xIsNext: !this.state.xIsNext
+      });
+    }
+  }
+  computerPlay() {
+    let aiPlayer = 'O';
+    console.log('comp player: ', aiPlayer);
+
+    const historyComp = this.state.history.slice(0, this.state.stepNumber + 1);
+    const currentComp = historyComp[historyComp.length - 1];
+    const computerSquares = currentComp.squares.slice();
+    let newSquares = computerSquares.slice();
+    let bestmove = minimax(newSquares, aiPlayer);
+    console.log('best move :', bestmove.index);
+    if (calculateWinner(computerSquares) || computerSquares[bestmove.index]) return;
+
+    computerSquares[bestmove.index] = aiPlayer;
+    this.setState({
+      history: historyComp.concat([{ squares: computerSquares }]),
+      stepNumber: historyComp.length,
+      xIsNext: !this.state.xIsNext
+    });
+  }
+  handleClick(i) {
+    let huPlayer = 'X';
+    let aiPlayer = 'O';
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    const current = history[history.length - 1];
+
+    const squares = current.squares.slice();
+    if (calculateWinner(squares) || squares[i]) return;
+    squares[i] = huPlayer;
+    //Computers turn
+    let newSquares = squares.slice();
+    let bestmove = minimax(newSquares, aiPlayer);
+
+    if (!calculateWinner(squares) || !squares[bestmove.index]) {
+      squares[bestmove.index] = aiPlayer;
+    }
+
+    this.setState({
+      history: history.concat([{ squares: squares }]),
+      stepNumber: history.length,
+      xIsNext: !this.state.xIsNext
+    });
+  }
+
+  render() {
+    const history = this.state.history;
+    const current = history[this.state.stepNumber];
+
+    const winner = calculateWinner(current.squares);
+
+    let status;
+    if (winner) {
+      winner === 'O' ? (status = 'Game over! You Lost!') : (status = 'Game over! You Won!');
+    } else {
+      status = 'Next player: ' ? 'X' : 'O';
+    }
+    return (
+      <div className="grid">
+        <div className="title">Karakana Tictactoe</div>
+
+        <Board squares={current.squares} onClick={i => this.handleClick(i)} />
+
+        <div className="footer">{status}</div>
+      </div>
+    );
+  }
+}
+function calculateWinner(squares) {
+  console.log(squares);
+  const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
+}
+
+// winning combinations using the board indexies
+function winning(squares, player) {
+  const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] === player && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return true;
+    }
+    return false;
+  }
+}
+// returns list of the indexes of empty spots on the board
+function emptyIndexies(squares) {
+  let indexOfField = [];
+
+  for (let i = 0; i < squares.length; i++) {
+    if (squares[i] !== 'O' && squares[i] !== 'X') indexOfField.push(i);
+  }
+  return indexOfField;
+}
+
+// the main minimax function
+
+function minimax(squares, player) {
+  //add one to function calls
+  player = 'O';
+
+  //available spots
+  let availSpots = emptyIndexies(squares);
+  let aiPlayer = 'O';
+  let huPlayer = 'X';
+  // checks for the terminal states such as win, lose, and tie and returning a value accordingly
+  if (winning(squares, huPlayer)) {
+    return { score: -10 };
+  } else if (winning(squares, aiPlayer)) {
+    return { score: 10 };
+  } else if (availSpots.length === 0) {
+    return { score: 0 };
+  }
+
+  // an array to collect all the objects
+  let moves = [];
+
+  // loop through available spots
+  for (let i = 0; i < availSpots.length; i++) {
+    //create an object for each and store the index of that spot that was stored as a number in the object's index key
+    let move = {};
+    move.index = availSpots[i];
+
+    // set the empty spot to the current player
+    squares[availSpots[i]] = player;
+
+    //if collect the score resulted from calling minimax on the opponent of the current player
+
+    let result = minimax(squares, aiPlayer);
+    move.score = result.score;
+
+    //reset the spot to empty
+    squares[availSpots[i]] = move.index;
+
+    // push the object to the array
+    moves.push(move);
+  }
+
+  // if it is the computer's turn loop over the moves and choose the move with the highest score
+  let bestMove;
+  if (player === aiPlayer) {
+    let bestScore = -10000;
+    for (let i = 0; i < moves.length; i++) {
+      if (moves[i].score > bestScore) {
+        bestScore = moves[i].score;
+        bestMove = i;
+      }
+    }
+  }
+
+  // return the chosen move (object) from the array to the higher depth
+
+  return moves[bestMove];
+}
+
+// ========================================
+
+ReactDOM.render(
+  <Game />,
+  document.getElementById('root')
+);
+
+    </script>
+</body>
+
+</html>
